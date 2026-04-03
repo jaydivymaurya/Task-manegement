@@ -8,6 +8,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || "127.0.0.1";
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/simple_task_manager";
+let cachedConnection = null;
 
 const taskSchema = new mongoose.Schema(
   {
@@ -37,12 +38,6 @@ const Task = mongoose.model("Task", taskSchema);
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
-app.use(
-  "/vendor",
-  express.static(path.join(__dirname, "node_modules"), {
-    index: false
-  })
-);
 
 app.get("/api/health", (_req, res) => {
   res.json({
@@ -54,6 +49,7 @@ app.get("/api/health", (_req, res) => {
 
 app.get("/api/tasks", async (_req, res) => {
   try {
+    await connectToDatabase();
     const tasks = await Task.find().sort({ createdAt: -1 });
     res.json({ tasks });
   } catch (error) {
@@ -71,6 +67,7 @@ app.post("/api/tasks", async (req, res) => {
   }
 
   try {
+    await connectToDatabase();
     const task = await Task.create({
       title: cleanTitle,
       details: cleanDetails
@@ -84,6 +81,7 @@ app.post("/api/tasks", async (req, res) => {
 
 app.patch("/api/tasks/:id", async (req, res) => {
   try {
+    await connectToDatabase();
     const updates = {};
 
     if (typeof req.body.title === "string") {
@@ -119,6 +117,7 @@ app.patch("/api/tasks/:id", async (req, res) => {
 
 app.delete("/api/tasks/:id", async (req, res) => {
   try {
+    await connectToDatabase();
     const task = await Task.findByIdAndDelete(req.params.id);
 
     if (!task) {
@@ -135,9 +134,22 @@ app.get("*", (_req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
+async function connectToDatabase() {
+  if (mongoose.connection.readyState === 1) {
+    return mongoose.connection;
+  }
+
+  if (cachedConnection) {
+    return cachedConnection;
+  }
+
+  cachedConnection = mongoose.connect(MONGODB_URI);
+  return cachedConnection;
+}
+
 async function startServer() {
   try {
-    await mongoose.connect(MONGODB_URI);
+    await connectToDatabase();
     app.listen(PORT, HOST, () => {
       console.log(`Task manager running at http://${HOST}:${PORT}`);
       console.log(`Database target: ${MONGODB_URI.includes("mongodb+srv://") ? "MongoDB Atlas" : "Local MongoDB"}`);
@@ -148,4 +160,8 @@ async function startServer() {
   }
 }
 
-startServer();
+module.exports = app;
+
+if (require.main === module) {
+  startServer();
+}
