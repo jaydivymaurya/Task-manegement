@@ -1,40 +1,12 @@
 require("dotenv").config();
 
 const express = require("express");
-const mongoose = require("mongoose");
 const path = require("path");
+const { MONGODB_URI, Task, connectToDatabase, mongoose } = require("./lib/db");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || "127.0.0.1";
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/simple_task_manager";
-let cachedConnection = null;
-
-const taskSchema = new mongoose.Schema(
-  {
-    title: {
-      type: String,
-      required: true,
-      trim: true,
-      maxlength: 120
-    },
-    details: {
-      type: String,
-      trim: true,
-      maxlength: 280,
-      default: ""
-    },
-    completed: {
-      type: Boolean,
-      default: false
-    }
-  },
-  {
-    timestamps: true
-  }
-);
-
-const Task = mongoose.model("Task", taskSchema);
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
@@ -133,19 +105,6 @@ app.delete("/api/tasks/:id", async (req, res) => {
 app.get("*", (_req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
-
-async function connectToDatabase() {
-  if (mongoose.connection.readyState === 1) {
-    return mongoose.connection;
-  }
-
-  if (cachedConnection) {
-    return cachedConnection;
-  }
-
-  cachedConnection = mongoose.connect(MONGODB_URI);
-  return cachedConnection;
-}
 
 async function startServer() {
   try {
