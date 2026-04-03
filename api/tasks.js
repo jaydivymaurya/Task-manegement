@@ -1,11 +1,17 @@
 const { Task, connectToDatabase } = require("../lib/db");
+const { getAuthenticatedUser } = require("../lib/auth");
 
 module.exports = async (req, res) => {
   try {
     await connectToDatabase();
+    const user = await getAuthenticatedUser(req);
+
+    if (!user) {
+      return res.status(401).json({ error: "Please log in to view your tasks." });
+    }
 
     if (req.method === "GET") {
-      const tasks = await Task.find().sort({ createdAt: -1 });
+      const tasks = await Task.find({ userId: user._id }).sort({ createdAt: -1 });
       return res.status(200).json({ tasks });
     }
 
@@ -19,6 +25,7 @@ module.exports = async (req, res) => {
       }
 
       const task = await Task.create({
+        userId: user._id,
         title: cleanTitle,
         details: cleanDetails
       });

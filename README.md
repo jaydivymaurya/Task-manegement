@@ -4,11 +4,13 @@ A small website built with `HTML`, `CSS`, `JavaScript`, `React`, `Node.js`, `Exp
 
 ## What it does
 
+- Create an account and log in
 - Create tasks
 - View all tasks
 - Mark tasks as complete or open
 - Delete tasks
 - Store task data in MongoDB
+- Show each user only their own tasks
 
 ## Tech stack
 
@@ -28,12 +30,14 @@ A small website built with `HTML`, `CSS`, `JavaScript`, `React`, `Node.js`, `Exp
 Example:
 
 ```text
-MONGODB_URI=mongodb+srv://jaydivyamaurya:<your-password>@urlshortner.kqiagos.mongodb.net/simple_task_manager?retryWrites=true&w=majority&appName=URLshortner
+MONGODB_URI=mongodb+srv://<db_username>:<db_password>@<cluster-name>.mongodb.net/simple_task_manager?retryWrites=true&w=majority&appName=<app-name>
+AUTH_SECRET=replace-this-with-a-long-random-secret
 PORT=3000
 HOST=127.0.0.1
 ```
 
 If your password includes special characters such as `@`, `:`, or `/`, use the URL-encoded password from the Atlas driver connection string.
+Set `AUTH_SECRET` to a long random string before deploying so login tokens stay private.
 
 ## Run locally
 
@@ -59,3 +63,4 @@ http://127.0.0.1:3000
 
 - The app reads environment variables from `.env`.
 - If `MONGODB_URI` is not set, it falls back to local MongoDB at `mongodb://127.0.0.1:27017/simple_task_manager`.
+- `AUTH_SECRET` signs login tokens and should be unique in production.

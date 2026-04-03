@@ -59,6 +59,19 @@ body::before {
   animation: fadeUp 0.7s ease;
 }
 
+.hero-account {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.account-copy {
+  color: var(--muted);
+}
+
 .eyebrow {
   margin: 0 0 1rem;
   text-transform: uppercase;
@@ -134,6 +147,13 @@ h1 {
   display: grid;
   gap: 1rem;
   margin-top: 1rem;
+}
+
+.auth-toggle {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
 }
 
 .field {
@@ -262,5 +282,9 @@ button:disabled {
 
   h1 {
     max-width: 100%;
+  }
+
+  .hero-account {
+    align-items: stretch;
   }
 }

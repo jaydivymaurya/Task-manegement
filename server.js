@@ -2,7 +2,12 @@ require("dotenv").config();
 
 const express = require("express");
 const path = require("path");
-const { MONGODB_URI, Task, connectToDatabase, mongoose } = require("./lib/db");
+const { MONGODB_URI, connectToDatabase, mongoose } = require("./lib/db");
+const authLoginHandler = require("./api/auth/login");
+const authMeHandler = require("./api/auth/me");
+const authSignupHandler = require("./api/auth/signup");
+const tasksHandler = require("./api/tasks");
+const taskByIdHandler = require("./api/tasks/[id]");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -19,87 +24,13 @@ app.get("/api/health", (_req, res) => {
   });
 });
 
-app.get("/api/tasks", async (_req, res) => {
-  try {
-    await connectToDatabase();
-    const tasks = await Task.find().sort({ createdAt: -1 });
-    res.json({ tasks });
-  } catch (error) {
-    res.status(500).json({ error: "Could not load tasks right now." });
-  }
-});
-
-app.post("/api/tasks", async (req, res) => {
-  const { title, details } = req.body || {};
-  const cleanTitle = typeof title === "string" ? title.trim() : "";
-  const cleanDetails = typeof details === "string" ? details.trim() : "";
-
-  if (!cleanTitle) {
-    return res.status(400).json({ error: "Task title is required." });
-  }
-
-  try {
-    await connectToDatabase();
-    const task = await Task.create({
-      title: cleanTitle,
-      details: cleanDetails
-    });
-
-    res.status(201).json({ task });
-  } catch (error) {
-    res.status(500).json({ error: "Could not create the task." });
-  }
-});
-
-app.patch("/api/tasks/:id", async (req, res) => {
-  try {
-    await connectToDatabase();
-    const updates = {};
-
-    if (typeof req.body.title === "string") {
-      const cleanTitle = req.body.title.trim();
-      if (!cleanTitle) {
-        return res.status(400).json({ error: "Task title cannot be empty." });
-      }
-      updates.title = cleanTitle;
-    }
-
-    if (typeof req.body.details === "string") {
-      updates.details = req.body.details.trim();
-    }
-
-    if (typeof req.body.completed === "boolean") {
-      updates.completed = req.body.completed;
-    }
-
-    const task = await Task.findByIdAndUpdate(req.params.id, updates, {
-      new: true,
-      runValidators: true
-    });
-
-    if (!task) {
-      return res.status(404).json({ error: "Task not found." });
-    }
-
-    res.json({ task });
-  } catch (error) {
-    res.status(500).json({ error: "Could not update the task." });
-  }
-});
-
-app.delete("/api/tasks/:id", async (req, res) => {
-  try {
-    await connectToDatabase();
-    const task = await Task.findByIdAndDelete(req.params.id);
-
-    if (!task) {
-      return res.status(404).json({ error: "Task not found." });
-    }
-
-    res.json({ success: true });
-  } catch (error) {
-    res.status(500).json({ error: "Could not delete the task." });
-  }
+app.all("/api/auth/signup", authSignupHandler);
+app.all("/api/auth/login", authLoginHandler);
+app.all("/api/auth/me", authMeHandler);
+app.all("/api/tasks", tasksHandler);
+app.all("/api/tasks/:id", (req, res) => {
+  req.query = { ...req.query, id: req.params.id };
+  return taskByIdHandler(req, res);
 });
 
 app.get("*", (_req, res) => {

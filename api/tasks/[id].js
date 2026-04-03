@@ -1,10 +1,16 @@
 const { Task, connectToDatabase } = require("../../lib/db");
+const { getAuthenticatedUser } = require("../../lib/auth");
 
 module.exports = async (req, res) => {
   const { id } = req.query;
 
   try {
     await connectToDatabase();
+    const user = await getAuthenticatedUser(req);
+
+    if (!user) {
+      return res.status(401).json({ error: "Please log in to manage your tasks." });
+    }
 
     if (req.method === "PATCH") {
       const updates = {};
@@ -27,10 +33,11 @@ module.exports = async (req, res) => {
         updates.completed = req.body.completed;
       }
 
-      const task = await Task.findByIdAndUpdate(id, updates, {
-        new: true,
-        runValidators: true
-      });
+      const task = await Task.findOneAndUpdate(
+        { _id: id, userId: user._id },
+        updates,
+        { new: true, runValidators: true }
+      );
 
       if (!task) {
         return res.status(404).json({ error: "Task not found." });
@@ -40,7 +47,7 @@ module.exports = async (req, res) => {
     }
 
     if (req.method === "DELETE") {
-      const task = await Task.findByIdAndDelete(id);
+      const task = await Task.findOneAndDelete({ _id: id, userId: user._id });
 
       if (!task) {
         return res.status(404).json({ error: "Task not found." });
